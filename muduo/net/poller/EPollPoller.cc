@@ -38,12 +38,12 @@ const int kDeleted = 2;
 
 EPollPoller::EPollPoller(EventLoop* loop)
   : Poller(loop),
-    epollfd_(::epoll_create1(EPOLL_CLOEXEC)),
+    epollfd_(::epoll_create1(EPOLL_CLOEXEC)), //on success return a FD
     events_(kInitEventListSize)
 {
-  if (epollfd_ < 0)
+  if (epollfd_ < 0) // epool_create failure
   {
-    LOG_SYSFATAL << "EPollPoller::EPollPoller";
+    LOG_SYSFATAL << "EPollPoller::EPollPoller  epoll_create1 ";
   }
 }
 
