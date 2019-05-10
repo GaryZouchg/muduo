@@ -1,5 +1,9 @@
 *.swp
 compile_commands.json
+<<<<<<< HEAD
+=======
+
+>>>>>>> f68591590d83c701c10ab18589297d8aac27655f
 .idea/
 cmake-build-debug/
-
+feature/
