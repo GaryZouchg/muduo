@@ -13,7 +13,37 @@
 using namespace muduo;
 using namespace muduo::net;
 
-const char* g_file = NULL;
+
+
+void writeFile(const char* filename, const char*  filecontent)
+{
+    string content;
+    FILE* fp = ::fopen(filename, "w+");
+    if (fp)
+    {
+        // inefficient!!!
+        const int kBufSize = 1024*1024;
+        char iobuf[kBufSize];
+        ::setbuffer(fp, iobuf, sizeof iobuf);
+
+        char buf[kBufSize];
+        size_t nread = 0;
+//        while ( (nread = ::fwrite(filecontent, 1, 512, fp)) > 0)
+//        {
+//            LOG_INFO << "in while loop  nreaed: " << nread ;
+//        }
+        nread = ::fwrite(filecontent, 1, sizeof buf, fp);
+
+        if(nread> 0)
+        {
+            LOG_INFO << "write file nreaed: " << nread ;
+        }
+
+        ::fclose(fp);
+    }
+
+}
+
 
 void onHighWaterMark(const TcpConnectionPtr& conn, size_t len)
 {
@@ -26,14 +56,14 @@ void onConnection(const TcpConnectionPtr& conn)
              << conn->localAddress().toIpPort() << " is "
              << (conn->connected() ? "UP" : "DOWN");
 
-    char buf[24]="123abcdefghijklmn";
+//    char buf[24]="123abcdefghijklmn";
     if (conn->connected())
     {
-        LOG_INFO << "faceIDserver - Sending buf " << buf
-                 << " to " << conn->peerAddress().toIpPort();
+//        LOG_INFO << "faceIDserver - Sending buf " << buf
+//                 << " to " << conn->peerAddress().toIpPort();
         conn->setHighWaterMarkCallback(onHighWaterMark, 64*1024);
 
-        conn->send(buf);
+       // conn->send(buf);
         //conn->shutdown();
         //LOG_INFO << "faceIDserver - done";
     }
@@ -41,9 +71,26 @@ void onConnection(const TcpConnectionPtr& conn)
 
 void onMessage(const TcpConnectionPtr& conn, Buffer* msg, Timestamp timestamp)
 {
-    LOG_INFO << "onMessage faceIDserver - MSG: " << msg->toStringPiece()
-             << "  timestamp: " << timestamp.toFormattedString(false);
-    conn->send(msg);
+
+    if( strlen(msg->peek()) < 1)
+    {
+        LOG_INFO  << "empty buffer readable Bytes : " << msg->readableBytes();
+        return;
+
+    }
+
+
+
+    std::string saveFile("/home/test2/scp/received-feature/");
+    saveFile += std::to_string(timestamp.microSecondsSinceEpoch());
+    saveFile += ".bin";
+
+    LOG_INFO << "readable Bytes : " << msg->readableBytes()
+             << "  file : " << saveFile;
+
+    writeFile(saveFile.c_str(),msg->peek());
+    //conn->send(msg);
+    //sleep(1);
 }
 
 
@@ -52,7 +99,7 @@ int main(int argc, char* argv[])
     LOG_INFO << "pid = " << getpid();
     if (argc > 0)
     {
-        g_file = argv[1];
+        //std::string saveFilePath = argv[1];
 
         EventLoop loop;
         InetAddress listenAddr(2021);

@@ -64,12 +64,17 @@ private:
     void onConnection(const TcpConnectionPtr& conn);
 
 
-    void onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp)
+    void onMessage(const TcpConnectionPtr& conn, Buffer* buf, Timestamp timestamp)
     {
+        if( strlen(buf->peek()) < 1)
+            return;
+
+        LOG_WARN << "onMessage faceIDserver - MSG: " << buf->peek() << "  readable Bytes : " << buf->readableBytes()
+                 << " timestamp: " << timestamp.toFormattedString(true);
         ++messagesRead_;
         bytesRead_ += buf->readableBytes();
         bytesWritten_ += buf->readableBytes();
-        conn->send(buf);
+        //conn->send(buf);
     }
 
     TcpClient client_;
@@ -87,11 +92,13 @@ public:
            int blockSize,
            int sessionCount,
            int timeout,
-           int threadCount)
+           int threadCount,
+           std::string featureFilePath)
             : loop_(loop),
-              threadPool_(loop, "pingpong-client"),
+              threadPool_(loop, "faceID-client"),
               sessionCount_(sessionCount),
-              timeout_(timeout)
+              timeout_(timeout),
+              featureFilePath_(featureFilePath)
     {
         loop->runAfter(timeout, std::bind(&Client::handleTimeout, this));
         if (threadCount > 1)
@@ -118,6 +125,32 @@ public:
     const string& message() const
     {
         return message_;
+    }
+
+    string featureFilePath() const
+    {
+        return featureFilePath_;
+    }
+    string readFile(const char* filename)
+    {
+        string content;
+        FILE* fp = ::fopen(filename, "rb");
+        if (fp)
+        {
+            // inefficient!!!
+            const int kBufSize = 1024*1024;
+            char iobuf[kBufSize];
+            ::setbuffer(fp, iobuf, sizeof iobuf);
+
+            char buf[kBufSize];
+            size_t nread = 0;
+            while ( (nread = ::fread(buf, 1, sizeof buf, fp)) > 0)
+            {
+                content.append(buf, nread);
+            }
+            ::fclose(fp);
+        }
+        return content;
     }
 
     void onConnect()
@@ -173,20 +206,29 @@ private:
     int timeout_;
     std::vector<std::unique_ptr<Session>> sessions_;
     string message_;
+    string featureFilePath_;
     AtomicInt32 numConnected_;
 };
 
 void Session::onConnection(const TcpConnectionPtr& conn)
 {
 
-    LOG_INFO << "faceIDclient - " << conn->peerAddress().toIpPort() << " -> "
+    LOG_WARN << "faceIDclient - " << conn->peerAddress().toIpPort() << " -> "
              << conn->localAddress().toIpPort() << " is "
              << (conn->connected() ? "UP" : "DOWN");
 
     if (conn->connected())
     {
         conn->setTcpNoDelay(true);
-        conn->send(owner_->message());
+        for(int i=0; i<10; i++ )
+        {
+            std::string featureFile = owner_->featureFilePath();
+            featureFile += std::to_string(i);
+            featureFile += ".bin";
+            LOG_WARN << "Send message of file:  " << featureFile;
+            std::string buf = owner_->readFile(featureFile.c_str());
+            conn->send(buf);
+        }
         owner_->onConnect();
     }
     else
@@ -215,17 +257,18 @@ int main(int argc, char* argv[])
         int timeout = atoi(argv[6]);
 
         std::string str_ip ="192.168.1.192";
+        std::string featureFilePath = "/home/test2/scp/feature/eric/";
         port = 2021 ;
-        threadCount = 2 ;
-        blockSize = 4096 ;
-        sessionCount = 2 ;
-        timeout = 5;
+        threadCount = 1 ;
+        blockSize = 64 ;
+        sessionCount = 1 ;
+        timeout = 10;   //5s 之后结束
 
 
         EventLoop loop;
         InetAddress serverAddr(str_ip.c_str(), port);
 
-        Client client(&loop, serverAddr, blockSize, sessionCount, timeout, threadCount);
+        Client client(&loop, serverAddr, blockSize, sessionCount, timeout, threadCount,featureFilePath);
         loop.loop();
     }
 }
