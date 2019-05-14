@@ -15,7 +15,7 @@ using namespace muduo::net;
 
 
 
-void writeFile(const char* filename, const char*  filecontent)
+void writeFile(const char* filename, const std::string & filecontent)
 {
     string content;
     FILE* fp = ::fopen(filename, "w+");
@@ -26,24 +26,19 @@ void writeFile(const char* filename, const char*  filecontent)
         char iobuf[kBufSize];
         ::setbuffer(fp, iobuf, sizeof iobuf);
 
-        char buf[kBufSize];
         size_t nread = 0;
-//        while ( (nread = ::fwrite(filecontent, 1, 512, fp)) > 0)
-//        {
-//            LOG_INFO << "in while loop  nreaed: " << nread ;
-//        }
-        nread = ::fwrite(filecontent, 1, sizeof buf, fp);
+
+        nread = ::fwrite(filecontent.c_str(), 1, filecontent.size(), fp);
 
         if(nread> 0)
         {
-            LOG_INFO << "write file nreaed: " << nread ;
+            LOG_INFO << "write file nreaed: " << nread << "  string length of filecontent: " << filecontent.size();
         }
 
         ::fclose(fp);
     }
 
 }
-
 
 void onHighWaterMark(const TcpConnectionPtr& conn, size_t len)
 {
@@ -59,13 +54,7 @@ void onConnection(const TcpConnectionPtr& conn)
 //    char buf[24]="123abcdefghijklmn";
     if (conn->connected())
     {
-//        LOG_INFO << "faceIDserver - Sending buf " << buf
-//                 << " to " << conn->peerAddress().toIpPort();
         conn->setHighWaterMarkCallback(onHighWaterMark, 64*1024);
-
-       // conn->send(buf);
-        //conn->shutdown();
-        //LOG_INFO << "faceIDserver - done";
     }
 }
 
@@ -79,20 +68,25 @@ void onMessage(const TcpConnectionPtr& conn, Buffer* msg, Timestamp timestamp)
 
     }
 
+    std::string saveFilePath("/home/test2/scp/received-feature/");
+
+    LOG_INFO << "readable  Bytes : " << msg->readableBytes()
+             << "writeable Bytes : " << msg->writableBytes();
+    //LOG_INFO << "write to  file  : " << saveFile;
+
+    while(msg->readableBytes()>=512)
+    {
+        std::string saveFile = saveFilePath + std::to_string(Timestamp::now().microSecondsSinceEpoch()) + ".bin";
+
+        writeFile(saveFile.c_str(),msg->retrieveAsString(512));
+
+    }
 
 
-    std::string saveFile("/home/test2/scp/received-feature/");
-    saveFile += std::to_string(timestamp.microSecondsSinceEpoch());
-    saveFile += ".bin";
-
-    LOG_INFO << "readable Bytes : " << msg->readableBytes()
-             << "  file : " << saveFile;
-
-    writeFile(saveFile.c_str(),msg->peek());
+    //writeFile(saveFile.c_str(),msg->peek());
     //conn->send(msg);
     //sleep(1);
 }
-
 
 int main(int argc, char* argv[])
 {
