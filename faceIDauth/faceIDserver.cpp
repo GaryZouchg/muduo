@@ -82,10 +82,6 @@ void onMessage(const TcpConnectionPtr& conn, Buffer* msg, Timestamp timestamp)
 
     }
 
-
-    //writeFile(saveFile.c_str(),msg->peek());
-    //conn->send(msg);
-    //sleep(1);
 }
 
 int main(int argc, char* argv[])
