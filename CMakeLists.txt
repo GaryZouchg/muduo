@@ -104,7 +104,7 @@ add_subdirectory(muduo/base)
 add_subdirectory(muduo/net)
 
 
-add_subdirectory(faceIDauth)
+add_subdirectory(FeatureServer)
 
 if(MUDUO_BUILD_EXAMPLES)
   add_subdirectory(contrib)

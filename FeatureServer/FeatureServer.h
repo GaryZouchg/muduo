@@ -39,6 +39,7 @@ private:
     std::unique_ptr<TcpServer> spTcpServer_;
 
     uint16_t nPort_;
+    std::string strSaveFilePath_;
 
 };
 

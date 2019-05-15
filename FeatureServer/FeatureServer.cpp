@@ -12,20 +12,23 @@ FeatureServer::FeatureServer()
 {
     spEventLoop_.reset(new EventLoop());
 
-    ConfigFileReader::GetInstance()->LoadFromFile("../config.cfg");
-    nPort_
-    InetAddress listenAddr(nPort_);
+    ConfigFileReader::GetInstance()->LoadFromFile("/home/test2/github/muduo/config.cfg");
+    //std::string strPort = ConfigFileReader::GetInstance()->GetConfigName("listen_port");
+    nPort_ = static_cast<uint16_t>(atoi(ConfigFileReader::GetInstance()->GetConfigName("listen_port")));
 
+    InetAddress listenAddr(2021);
     spTcpServer_.reset(new TcpServer(spEventLoop_.get(), listenAddr, "FeatureServer"));
-
-
 
     spTcpServer_->setConnectionCallback(std::bind(&FeatureServer::OnConnection,this,_1) );
     spTcpServer_->setMessageCallback(std::bind(&FeatureServer::OnMessage,this,_1,_2,_3) );
 
+    strSaveFilePath_ = ConfigFileReader::GetInstance()->GetConfigName("save_file_path");
+
 }
 void FeatureServer::Run()
 {
+    spTcpServer_->start();
+    spEventLoop_->loop();
 
 }
 
@@ -52,19 +55,15 @@ void FeatureServer::OnMessage(const TcpConnectionPtr& conn, Buffer* msg, Timesta
     {
         LOG_INFO  << "empty buffer readable Bytes : " << msg->readableBytes();
         return;
-
     }
 
-    std::string saveFilePath("/home/test2/scp/received-feature/");
-
     LOG_INFO << "readable  Bytes : " << msg->readableBytes()
-             << "writeable Bytes : " << msg->writableBytes();
-    //LOG_INFO << "write to  file  : " << saveFile;
+             << "writeable Bytes : " << msg->writableBytes()
+             << "timestamp : "<<timestamp.toFormattedString();
 
     while(msg->readableBytes()>=512)
     {
-        std::string saveFile = saveFilePath + std::to_string(Timestamp::now().microSecondsSinceEpoch()) + ".bin";
-
+        std::string saveFile = strSaveFilePath_ + std::to_string(Timestamp::now().microSecondsSinceEpoch()) + ".bin";
         WriteFile(saveFile.c_str(),msg->retrieveAsString(512));
     }
 }
