@@ -24,6 +24,10 @@ FeatureServer::FeatureServer()
 
     strSaveFilePath_ = ConfigFileReader::GetInstance()->GetConfigName("save_file_path");
 
+    //connect to redies
+
+    InetAddress serverAddr("127.0.0.1", 6379);
+
 }
 void FeatureServer::Run()
 {

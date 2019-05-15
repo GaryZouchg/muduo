@@ -12,7 +12,7 @@ add_executable( ServerMain
         FeatureServer.cpp
         FileHelper.cpp
         ConfigFileReader.cpp
-        )
-target_link_libraries(ServerMain muduo_net )
+        HiRedis.cpp )
+target_link_libraries(ServerMain muduo_net hiredis)
 set_target_properties(ServerMain PROPERTIES COMPILE_FLAGS "-Wno-error=old-style-cast")
 
