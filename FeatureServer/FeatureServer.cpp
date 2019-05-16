@@ -84,6 +84,12 @@ void FeatureServer::OnMessage(const TcpConnectionPtr& conn, Buffer* msg, Timesta
 
         string strCMD = "get " + strFeature;
         spHiRedis_->command(FeatureServer::OnCMDget, strCMD);
+
+
+        std::hash<std::string> h;
+
+        size_t nh = h(strFeature);
+
         //spHiRedis_->command(FeatureServer::OnCMDset, "set ", strFeature , std::to_string(Timestamp::now().microSecondsSinceEpoch()) );
     }
 
