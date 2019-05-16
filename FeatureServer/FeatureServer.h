@@ -37,6 +37,8 @@ private:
     static void OnRedisConnect(HiRedis* c, int status);
     static void OnRedisDisconnect(HiRedis* c, int status);
     static void OnCMDdbsize(HiRedis* c, redisReply* reply);
+    static void OnCMDget(HiRedis* c, redisReply* reply);
+    static void OnCMDset(HiRedis* c, redisReply* reply);
 
 private:
     static string ToString(long long value);

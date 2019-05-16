@@ -5,7 +5,7 @@
 #ifndef MUDUO_FILEHELPER_H
 #define MUDUO_FILEHELPER_H
 
-#include <hpsocket/common/GlobalDef.h>
+#include "hpsocketdef.h"
 #include <unistd.h>
 #include <sys/uio.h>
 #include <sys/mman.h>
@@ -27,15 +27,15 @@
 
 std::string GetCurrentDirectory();
 std::string GetModuleFileName(pid_t pid = 0);
-BOOL SetCurrentPathToModulePath(pid_t pid = 0);
+bool SetCurrentPathToModulePath(pid_t pid = 0);
 
 class FileHelper
 {
 public:
-    BOOL Open(LPCTSTR lpszFilePath, int iFlag, mode_t iMode = 0);
-    BOOL Close();
-    BOOL Stat(struct stat& st);
-    BOOL GetSize(SIZE_T& dwSize);
+    bool Open(LPCTSTR lpszFilePath, int iFlag, mode_t iMode = 0);
+    bool Close();
+    bool Stat(struct stat& st);
+    bool GetSize(SIZE_T& dwSize);
 
     SSIZE_T Read(PVOID pBuffer, SIZE_T dwCount)
     {return read(m_fd, pBuffer, dwCount);}
@@ -52,18 +52,18 @@ public:
     SSIZE_T Seek(SSIZE_T lOffset, int iWhence)
     {return lseek(m_fd, lOffset, iWhence);}
 
-    BOOL IsValid()	{return m_fd != -1;}
+    bool IsValid()	{return m_fd != -1;}
     operator FD ()	{return m_fd;}
 
-    BOOL IsExist()	{return IsValid();}
+    bool IsExist()	{return IsValid();}
 
-    BOOL IsDirectory();
-    BOOL IsFile();
+    bool IsDirectory();
+    bool IsFile();
 
-    static BOOL IsExist(LPCTSTR lpszFilePath);
-    static BOOL IsDirectory(LPCTSTR lpszFilePath);
-    static BOOL IsFile(LPCTSTR lpszFilePath);
-    static BOOL IsLink(LPCTSTR lpszFilePath);
+    static bool IsExist(LPCTSTR lpszFilePath);
+    static bool IsDirectory(LPCTSTR lpszFilePath);
+    static bool IsFile(LPCTSTR lpszFilePath);
+    static bool IsLink(LPCTSTR lpszFilePath);
 
 public:
     FileHelper(LPCTSTR lpszFilePath = nullptr, int iFlag = O_RDONLY, mode_t iMode = 0)
@@ -86,12 +86,12 @@ private:
 class FileHelperMapping
 {
 public:
-    BOOL Map(LPCTSTR lpszFilePath, SIZE_T dwSize = 0, SIZE_T dwOffset = 0, int iProtected = PROT_READ, int iFlag = MAP_PRIVATE);
-    BOOL Map(FD fd, SIZE_T dwSize = 0, SIZE_T dwOffset = 0, int iProtected = PROT_READ, int iFlag = MAP_PRIVATE);
-    BOOL Unmap();
-    BOOL MSync(int iFlag = MS_SYNC, SIZE_T dwSize = 0);
+    bool Map(LPCTSTR lpszFilePath, SIZE_T dwSize = 0, SIZE_T dwOffset = 0, int iProtected = PROT_READ, int iFlag = MAP_PRIVATE);
+    bool Map(FD fd, SIZE_T dwSize = 0, SIZE_T dwOffset = 0, int iProtected = PROT_READ, int iFlag = MAP_PRIVATE);
+    bool Unmap();
+    bool MSync(int iFlag = MS_SYNC, SIZE_T dwSize = 0);
 
-    BOOL IsValid	()		{return m_pv != INVALID_MAP_ADDR;}
+    bool IsValid	()		{return m_pv != INVALID_MAP_ADDR;}
     SIZE_T Size		()		{return m_dwSize;}
     LPBYTE Ptr		()		{return m_pv;}
     operator LPBYTE	()		{return Ptr();}

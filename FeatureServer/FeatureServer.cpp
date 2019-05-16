@@ -78,7 +78,13 @@ void FeatureServer::OnMessage(const TcpConnectionPtr& conn, Buffer* msg, Timesta
     {
 
         std::string saveFile = strSaveFilePath_ + std::to_string(Timestamp::now().microSecondsSinceEpoch()) + ".bin";
-        WriteFile(saveFile.c_str(),msg->retrieveAsString(512));
+
+        string strFeature=msg->retrieveAsString(512);
+        WriteFile(saveFile.c_str(),strFeature);
+
+        string strCMD = "get " + strFeature;
+        spHiRedis_->command(FeatureServer::OnCMDget, strCMD);
+        //spHiRedis_->command(FeatureServer::OnCMDset, "set ", strFeature , std::to_string(Timestamp::now().microSecondsSinceEpoch()) );
     }
 
     spHiRedis_->command(FeatureServer::OnCMDdbsize,"dbsize");
@@ -177,5 +183,21 @@ string FeatureServer::RedisReplyToString(const redisReply* reply)
 
 void FeatureServer::OnCMDdbsize(HiRedis* c, redisReply* reply)
 {
-    LOG_INFO << "dbsize " << RedisReplyToString(reply);
+    LOG_INFO << "cmd dbsize " << RedisReplyToString(reply);
 }
+
+void FeatureServer::OnCMDget(HiRedis* c, redisReply* reply)
+{
+    LOG_INFO << "OnCMDget " << RedisReplyToString(reply)<< " str  len: " << reply->len
+             << " reply-str " << reply->str;
+
+}
+void FeatureServer::OnCMDset(HiRedis* c, redisReply* reply)
+{
+    LOG_INFO << "OnCMDset " << RedisReplyToString(reply)<< " str  len: " << reply->len
+             << " reply-str " << reply->str;
+
+}
+
+
+
