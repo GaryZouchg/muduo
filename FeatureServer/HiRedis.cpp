@@ -13,38 +13,37 @@
 
 using namespace muduo;
 using namespace muduo::net;
-using namespace hiredis;
 
 static void dummy(const std::shared_ptr<Channel>&)
 {
 }
 
-Hiredis::Hiredis(EventLoop* loop, const InetAddress& serverAddr)
+HiRedis::HiRedis(EventLoop* loop, const InetAddress& serverAddr)
         : loop_(loop),
           serverAddr_(serverAddr),
           context_(NULL)
 {
 }
 
-Hiredis::~Hiredis()
+HiRedis::~HiRedis()
 {
     LOG_DEBUG << this;
     assert(!channel_ || channel_->isNoneEvent());
     ::redisAsyncFree(context_);
 }
 
-bool Hiredis::connected() const
+bool HiRedis::connected() const
 {
     return channel_ && context_ && (context_->c.flags & REDIS_CONNECTED);
 }
 
-const char* Hiredis::errstr() const
+const char* HiRedis::errstr() const
 {
     assert(context_ != NULL);
     return context_->errstr;
 }
 
-void Hiredis::connect()
+void HiRedis::connect()
 {
     assert(!context_);
 
@@ -65,7 +64,7 @@ void Hiredis::connect()
     ::redisAsyncSetDisconnectCallback(context_, disconnectCallback);
 }
 
-void Hiredis::disconnect()
+void HiRedis::disconnect()
 {
     if (connected())
     {
@@ -74,22 +73,22 @@ void Hiredis::disconnect()
     }
 }
 
-int Hiredis::fd() const
+int HiRedis::fd() const
 {
     assert(context_);
     return context_->c.fd;
 }
 
-void Hiredis::setChannel()
+void HiRedis::setChannel()
 {
     LOG_DEBUG << this;
     assert(!channel_);
     channel_.reset(new Channel(loop_, fd()));
-    channel_->setReadCallback(std::bind(&Hiredis::handleRead, this, _1));
-    channel_->setWriteCallback(std::bind(&Hiredis::handleWrite, this));
+    channel_->setReadCallback(std::bind(&HiRedis::handleRead, this, _1));
+    channel_->setWriteCallback(std::bind(&HiRedis::handleWrite, this));
 }
 
-void Hiredis::removeChannel()
+void HiRedis::removeChannel()
 {
     LOG_DEBUG << this;
     channel_->disableAll();
@@ -98,13 +97,13 @@ void Hiredis::removeChannel()
     channel_.reset();
 }
 
-void Hiredis::handleRead(muduo::Timestamp receiveTime)
+void HiRedis::handleRead(muduo::Timestamp receiveTime)
 {
     LOG_TRACE << "receiveTime = " << receiveTime.toString();
     ::redisAsyncHandleRead(context_);
 }
 
-void Hiredis::handleWrite()
+void HiRedis::handleWrite()
 {
     if (!(context_->c.flags & REDIS_CONNECTED))
     {
@@ -113,30 +112,30 @@ void Hiredis::handleWrite()
     ::redisAsyncHandleWrite(context_);
 }
 
-/* static */ Hiredis* Hiredis::getHiredis(const redisAsyncContext* ac)
+/* static */ HiRedis* HiRedis::getHiredis(const redisAsyncContext* ac)
 {
-    Hiredis* hiredis = static_cast<Hiredis*>(ac->ev.data);
+    HiRedis* hiredis = static_cast<HiRedis*>(ac->ev.data);
     assert(hiredis->context_ == ac);
     return hiredis;
 }
 
-void Hiredis::logConnection(bool up) const
+void HiRedis::logConnection(bool up) const
 {
     InetAddress localAddr(sockets::getLocalAddr(fd()));
     InetAddress peerAddr(sockets::getPeerAddr(fd()));
 
     LOG_INFO << localAddr.toIpPort() << " -> "
-             << peerAddr.toIpPort() << " is "
+             << peerAddr.toIpPort() << " redis  is "
              << (up ? "UP" : "DOWN");
 }
 
-/* static */ void Hiredis::connectCallback(const redisAsyncContext* ac, int status)
+/* static */ void HiRedis::connectCallback(const redisAsyncContext* ac, int status)
 {
     LOG_TRACE;
     getHiredis(ac)->connectCallback(status);
 }
 
-void Hiredis::connectCallback(int status)
+void HiRedis::connectCallback(int status)
 {
     if (status != REDIS_OK)
     {
@@ -154,13 +153,13 @@ void Hiredis::connectCallback(int status)
     }
 }
 
-/* static */ void Hiredis::disconnectCallback(const redisAsyncContext* ac, int status)
+/* static */ void HiRedis::disconnectCallback(const redisAsyncContext* ac, int status)
 {
     LOG_TRACE;
     getHiredis(ac)->disconnectCallback(status);
 }
 
-void Hiredis::disconnectCallback(int status)
+void HiRedis::disconnectCallback(int status)
 {
     logConnection(false);
     removeChannel();
@@ -171,41 +170,41 @@ void Hiredis::disconnectCallback(int status)
     }
 }
 
-void Hiredis::addRead(void* privdata)
+void HiRedis::addRead(void* privdata)
 {
     LOG_TRACE;
-    Hiredis* hiredis = static_cast<Hiredis*>(privdata);
+    HiRedis* hiredis = static_cast<HiRedis*>(privdata);
     hiredis->channel_->enableReading();
 }
 
-void Hiredis::delRead(void* privdata)
+void HiRedis::delRead(void* privdata)
 {
     LOG_TRACE;
-    Hiredis* hiredis = static_cast<Hiredis*>(privdata);
+    HiRedis* hiredis = static_cast<HiRedis*>(privdata);
     hiredis->channel_->disableReading();
 }
 
-void Hiredis::addWrite(void* privdata)
+void HiRedis::addWrite(void* privdata)
 {
     LOG_TRACE;
-    Hiredis* hiredis = static_cast<Hiredis*>(privdata);
+    HiRedis* hiredis = static_cast<HiRedis*>(privdata);
     hiredis->channel_->enableWriting();
 }
 
-void Hiredis::delWrite(void* privdata)
+void HiRedis::delWrite(void* privdata)
 {
     LOG_TRACE;
-    Hiredis* hiredis = static_cast<Hiredis*>(privdata);
+    HiRedis* hiredis = static_cast<HiRedis*>(privdata);
     hiredis->channel_->disableWriting();
 }
 
-void Hiredis::cleanup(void* privdata)
+void HiRedis::cleanup(void* privdata)
 {
-    Hiredis* hiredis = static_cast<Hiredis*>(privdata);
+    HiRedis* hiredis = static_cast<HiRedis*>(privdata);
     LOG_DEBUG << hiredis;
 }
 
-int Hiredis::command(const CommandCallback& cb, muduo::StringArg cmd, ...)
+int HiRedis::command(const CommandCallback& cb, muduo::StringArg cmd, ...)
 {
     if (!connected()) return REDIS_ERR;
 
@@ -218,25 +217,25 @@ int Hiredis::command(const CommandCallback& cb, muduo::StringArg cmd, ...)
     return ret;
 }
 
-/* static */ void Hiredis::commandCallback(redisAsyncContext* ac, void* r, void* privdata)
+/* static */ void HiRedis::commandCallback(redisAsyncContext* ac, void* r, void* privdata)
 {
     redisReply* reply = static_cast<redisReply*>(r);
     CommandCallback* cb = static_cast<CommandCallback*>(privdata);
     getHiredis(ac)->commandCallback(reply, cb);
 }
 
-void Hiredis::commandCallback(redisReply* reply, CommandCallback* cb)
+void HiRedis::commandCallback(redisReply* reply, CommandCallback* cb)
 {
     (*cb)(this, reply);
     delete cb;
 }
 
-int Hiredis::ping()
+int HiRedis::ping()
 {
-    return command(std::bind(&Hiredis::pingCallback, this, _1, _2), "PING");
+    return command(std::bind(&HiRedis::pingCallback, this, _1, _2), "PING");
 }
 
-void Hiredis::pingCallback(Hiredis* me, redisReply* reply)
+void HiRedis::pingCallback(HiRedis* me, redisReply* reply)
 {
     assert(this == me);
     LOG_DEBUG << reply->str;

@@ -14,6 +14,7 @@
 #include <muduo/net/TcpServer.h>
 
 #include "Singleton.h"
+#include "HiRedis.h"
 
 
 using namespace muduo;
@@ -25,18 +26,32 @@ class FeatureServer: public Singleton<FeatureServer>
 public:
     FeatureServer();
     void Run();
+
+private:
     void OnConnection(const TcpConnectionPtr& conn);
     void onHighWaterMark(const TcpConnectionPtr& conn, size_t len);
     void OnMessage(const TcpConnectionPtr& conn, Buffer* msg, Timestamp timestamp);
+    void WriteFile(const char* filename, const std::string & filecontent);
+
+    //redis
+    static void OnRedisConnect(HiRedis* c, int status);
+    static void OnRedisDisconnect(HiRedis* c, int status);
+    static void OnCMDdbsize(HiRedis* c, redisReply* reply);
 
 private:
-    void WriteFile(const char* filename, const std::string & filecontent);
+    static string ToString(long long value);
+    static string RedisReplyToString(const redisReply* reply);
+
 
 private:
 
 
     std::unique_ptr<EventLoop> spEventLoop_;
     std::unique_ptr<TcpServer> spTcpServer_;
+
+    std::unique_ptr<HiRedis> spHiRedis_;
+
+
 
     uint16_t nPort_;
     std::string strSaveFilePath_;
