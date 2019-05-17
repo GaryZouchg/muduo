@@ -76,24 +76,25 @@ void FeatureServer::OnMessage(const TcpConnectionPtr& conn, Buffer* msg, Timesta
 
     while(msg->readableBytes()>=512)
     {
-
-        std::string saveFile = strSaveFilePath_ + std::to_string(Timestamp::now().microSecondsSinceEpoch()) + ".bin";
-
         string strFeature=msg->retrieveAsString(512);
+        std::hash<std::string> hashStr;
+        size_t nHash = hashStr(strFeature);
+        std::string saveFile = strSaveFilePath_ + std::to_string(nHash) + ".bin";
+
+
+        LOG_INFO << "hash value:  " << nHash << " write file: " << saveFile << " content size:  " << strFeature.size();
+
         WriteFile(saveFile.c_str(),strFeature);
 
-        string strCMD = "get " + strFeature;
-        spHiRedis_->command(FeatureServer::OnCMDget, strCMD);
 
+        string strCMDget = "get " + std::to_string(nHash);
+        spHiRedis_->command(FeatureServer::OnCMDget, strCMDget );
 
-        std::hash<std::string> h;
-
-        size_t nh = h(strFeature);
-
-        //spHiRedis_->command(FeatureServer::OnCMDset, "set ", strFeature , std::to_string(Timestamp::now().microSecondsSinceEpoch()) );
+        string strCMDset = "set  " + std::to_string(nHash) + " %s ";
+        spHiRedis_->command(FeatureServer::OnCMDset, strCMDset ,  strFeature.c_str());
     }
 
-    spHiRedis_->command(FeatureServer::OnCMDdbsize,"dbsize");
+    spHiRedis_->command(FeatureServer::OnCMDdbsize,"dbsize ");
 }
 
 
@@ -109,7 +110,11 @@ void FeatureServer::WriteFile(const char* filename, const std::string & filecont
         ::setbuffer(fp, iobuf, sizeof iobuf);
 
         size_t nwrite = ::fwrite(filecontent.c_str(), 1, filecontent.size(), fp);
-        LOG_INFO << "write file: " << filename <<"  Byte of fwrite: "<< nwrite << " length of filecontent: " << filecontent.size();
+        if(nwrite< 1)
+        {
+            LOG_INFO << "write file: " << filename <<"  Byte of fwrite: "<< nwrite << " length of filecontent: " << filecontent.size();
+
+        }
 
         ::fclose(fp);
     }
@@ -189,7 +194,7 @@ string FeatureServer::RedisReplyToString(const redisReply* reply)
 
 void FeatureServer::OnCMDdbsize(HiRedis* c, redisReply* reply)
 {
-    LOG_INFO << "cmd dbsize " << RedisReplyToString(reply);
+    LOG_INFO << "OnCMDdbsize " << RedisReplyToString(reply);
 }
 
 void FeatureServer::OnCMDget(HiRedis* c, redisReply* reply)
