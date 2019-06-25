@@ -1,0 +1,33 @@
+@startuml
+
+
+participant EventLoop
+participant TCPConnection
+participant Poller
+participant Buffer
+participant Channel
+
+->EventLoop:loop()
+    activate EventLoop
+    EventLoop-> Poller: poll()
+        activate Poller
+        Poller->Poller: ::epoll_wait()
+        Poller->Poller: fillActiveChannels()
+        deactivate Poller
+    EventLoop-> Channel: handleEvent()
+        activate Channel
+        Channel->Channel: handleEventWithGuard
+            activate Channel
+            Channel->TCPConnection: handleRead()
+                activate TCPConnection
+                TCPConnection->Buffer:readFd()
+                    activate Buffer
+                        Buffer->Buffer: ::readv()
+                    deactivate Buffer
+                <-TCPConnection: onMessage()
+                deactivate TCPConnection
+            deactivate Channel
+        deactivate Channel
+    EventLoop-> EventLoop: doPendingFunctors()
+    deactivate EventLoop
+@enduml
