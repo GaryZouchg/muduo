@@ -6,6 +6,7 @@ compile_commands.json
 >>>>>>> f68591590d83c701c10ab18589297d8aac27655f
 .idea/
 cmake-build-debug/
+build/
 feature/
 course/
 course
